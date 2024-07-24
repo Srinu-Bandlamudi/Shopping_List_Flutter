@@ -10,20 +10,47 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
-  final List<GroceryItem> _groceryItems=[];
-  void _addItem() async{
-    final newItem=await Navigator.of(context).push<GroceryItem>(
+  final List<GroceryItem> _groceryItems = [];
+  void _addItem() async {
+    final newItem = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(builder: (ctx) => const NewItem()),
     );
-    if(newItem==null)return ;
+    if (newItem == null) return;
     setState(() {
-       _groceryItems.add(newItem);
+      _groceryItems.add(newItem);
     });
-   
+  }
+
+  void _onRemoveItem(GroceryItem item) {
+    setState(() {
+      _groceryItems.remove(item);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    Widget mainContent=const Center(child: Text('No Items Found,Start Adding Them!'),);
+    if(_groceryItems.isNotEmpty){
+       mainContent=ListView.builder(
+        itemCount: _groceryItems.length,
+        itemBuilder: (ctx, index) => Dismissible(
+          key: ValueKey(_groceryItems[index].id),
+          onDismissed: (direction) => _onRemoveItem(_groceryItems[index]),
+          child: ListTile(
+            title: Text(_groceryItems[index].name),
+            leading: Container(
+              height: 24,
+              width: 24,
+              color: _groceryItems[index].category.color,
+            ),
+            trailing: Text(
+              _groceryItems[index].quantity.toString(),
+            ),
+          ),
+        ),
+      );
+
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Groceries'),
@@ -34,20 +61,7 @@ class _GroceryListState extends State<GroceryList> {
           )
         ],
       ),
-      body: ListView.builder(
-        itemCount: _groceryItems.length,
-        itemBuilder: (ctx, index) => ListTile(
-          title: Text(_groceryItems[index].name),
-          leading: Container(
-            height: 24,
-            width: 24,
-            color: _groceryItems[index].category.color,
-          ),
-          trailing: Text(
-            _groceryItems[index].quantity.toString(),
-          ),
-        ),
-      ),
+      body:mainContent
     );
   }
 }
