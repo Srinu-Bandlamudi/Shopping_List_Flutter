@@ -19,54 +19,33 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
-  Future<void> _addItem() async {
+  void _addItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       final url = Uri.https(
         'shopping-list-flutter-8a73d-default-rtdb.firebaseio.com',
         '/shopping-list.json',
       );
-
-      try {
-        final response = await http.post(
-          url,
-          headers: {
-            'Content-Type': 'application/json',
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(
+          {
+            'name': _enteredName,
+            'quantity': _enteredQuantity,
+            'category': _selectedCategory.name
           },
-          body: json.encode(
-            {
-              'name': _enteredName,
-              'quantity': _enteredQuantity,
-              'category': _selectedCategory.name
-            },
-          ),
-        );
+        ),
+      );
+      print(response.body);
+      print(response.statusCode);
 
-        if (response.statusCode >= 400) {
-          throw Exception('Failed to add item. Server returned ${response.statusCode}.');
-        }
-
-        // Successfully added item, navigate back
-        Navigator.of(context).pop();
-      } catch (error) {
-        print('Error adding item: $error');
-        // Optionally, show a dialog or a snackbar to inform the user
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('An error occurred'),
-            content: const Text('Something went wrong while adding the item.'),
-            actions: [
-              TextButton(
-                child: const Text('Okay'),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                },
-              ),
-            ],
-          ),
-        );
+      if (!context.mounted) {
+        return;
       }
+      Navigator.of(context).pop();
     }
   }
 
