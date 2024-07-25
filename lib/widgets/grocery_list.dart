@@ -15,8 +15,9 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
-   List<GroceryItem> _groceryItems = [];
-   var _isLoading=true;
+  List<GroceryItem> _groceryItems = [];
+  var _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -30,12 +31,19 @@ class _GroceryListState extends State<GroceryList> {
       '/shopping-list.json',
     );
     final response = await http.get(url);
-    final Map<String, dynamic> listData =
-        json.decode(response.body);
+
+    if (response.statusCode >= 400) {
+      setState(() {
+        _error = 'Failed to Fetch data,Please try again Later.';
+      });
+    }
+
+    final Map<String, dynamic> listData = json.decode(response.body);
     final List<GroceryItem> loadedItems = [];
     for (final item in listData.entries) {
-      final category = categories.entries.firstWhere(
-          (catItem) => catItem.value.name == item.value['category']).value;
+      final category = categories.entries
+          .firstWhere((catItem) => catItem.value.name == item.value['category'])
+          .value;
       loadedItems.add(
         GroceryItem(
             id: item.key,
@@ -45,25 +53,23 @@ class _GroceryListState extends State<GroceryList> {
       );
     }
     setState(() {
-      _groceryItems=loadedItems;
-      _isLoading=false;
+      _groceryItems = loadedItems;
+      _isLoading = false;
     });
-    
   }
 
   void _addItem() async {
-    final newItem=await Navigator.of(context).push<GroceryItem>(
+    final newItem = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
-    if(newItem==null){
+    if (newItem == null) {
       return;
     }
     setState(() {
       _groceryItems.add(newItem);
     });
-    
   }
 
   void _onRemoveItem(GroceryItem item) {
@@ -78,8 +84,10 @@ class _GroceryListState extends State<GroceryList> {
       child: Text('No Items Found,Start Adding Them!'),
     );
 
-    if(_isLoading){
-      mainContent=const Center(child: CircularProgressIndicator(),);
+    if (_isLoading) {
+      mainContent = const Center(
+        child: CircularProgressIndicator(),
+      );
     }
     if (_groceryItems.isNotEmpty) {
       mainContent = ListView.builder(
@@ -99,6 +107,11 @@ class _GroceryListState extends State<GroceryList> {
             ),
           ),
         ),
+      );
+    }
+    if (_error != null) {
+      mainContent = Center(
+        child: Text(_error!)
       );
     }
     return Scaffold(
