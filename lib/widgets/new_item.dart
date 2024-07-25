@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/category.dart';
-import 'package:shopping_list/models/grocery_item.dart';
+
+import 'package:http/http.dart' as http;
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -16,16 +19,54 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
 
-  void _addItem() {
+  Future<void> _addItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      Navigator.of(context).pop(
-        GroceryItem(
-            id: DateTime.now().toString(),
-            name: _enteredName,
-            quantity: _enteredQuantity,
-            category: _selectedCategory),
+      final url = Uri.https(
+        'shopping-list-flutter-8a73d-default-rtdb.firebaseio.com',
+        '/shopping-list.json',
       );
+
+      try {
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: json.encode(
+            {
+              'name': _enteredName,
+              'quantity': _enteredQuantity,
+              'category': _selectedCategory.name
+            },
+          ),
+        );
+
+        if (response.statusCode >= 400) {
+          throw Exception('Failed to add item. Server returned ${response.statusCode}.');
+        }
+
+        // Successfully added item, navigate back
+        Navigator.of(context).pop();
+      } catch (error) {
+        print('Error adding item: $error');
+        // Optionally, show a dialog or a snackbar to inform the user
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('An error occurred'),
+            content: const Text('Something went wrong while adding the item.'),
+            actions: [
+              TextButton(
+                child: const Text('Okay'),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 
@@ -51,7 +92,7 @@ class _NewItemState extends State<NewItem> {
                       value.isEmpty ||
                       value.trim().length <= 1 ||
                       value.trim().length > 50) {
-                    return 'Must be between 1 and 50 Characxters.';
+                    return 'Must be between 1 and 50 Characters.';
                   }
                   return null;
                 },
@@ -74,7 +115,7 @@ class _NewItemState extends State<NewItem> {
                             value.isEmpty ||
                             int.tryParse(value) == null ||
                             int.tryParse(value)! <= 0) {
-                          return 'Must be a valid,Positive Number.';
+                          return 'Must be a valid, positive number.';
                         }
                         return null;
                       },
@@ -87,7 +128,7 @@ class _NewItemState extends State<NewItem> {
                     width: 8,
                   ),
                   Expanded(
-                    child: DropdownButtonFormField(
+                    child: DropdownButtonFormField<Category>(
                       value: _selectedCategory,
                       items: [
                         for (final category in categories.entries)
