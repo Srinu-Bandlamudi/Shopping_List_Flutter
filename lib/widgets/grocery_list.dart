@@ -30,12 +30,20 @@ class _GroceryListState extends State<GroceryList> {
       'shopping-list-flutter-8a73d-default-rtdb.firebaseio.com',
       '/shopping-list.json',
     );
-    final response = await http.get(url);
+    try{
+      final response = await http.get(url);
 
     if (response.statusCode >= 400) {
       setState(() {
         _error = 'Failed to Fetch data,Please try again Later.';
       });
+    }
+
+    if (response.body == 'null') {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
     }
 
     final Map<String, dynamic> listData = json.decode(response.body);
@@ -56,6 +64,12 @@ class _GroceryListState extends State<GroceryList> {
       _groceryItems = loadedItems;
       _isLoading = false;
     });
+
+    }catch(error){
+      setState(() {
+        _error = 'Something went wrong,Please try again Later.';
+      });
+    }
   }
 
   void _addItem() async {
@@ -73,7 +87,7 @@ class _GroceryListState extends State<GroceryList> {
   }
 
   void _onRemoveItem(GroceryItem item) async {
-    final index=_groceryItems.indexOf(item);
+    final index = _groceryItems.indexOf(item);
     setState(() {
       _groceryItems.remove(item);
     });
@@ -89,7 +103,6 @@ class _GroceryListState extends State<GroceryList> {
         _groceryItems.insert(index, item);
       });
     }
-
   }
 
   @override
@@ -124,9 +137,7 @@ class _GroceryListState extends State<GroceryList> {
       );
     }
     if (_error != null) {
-      mainContent = Center(
-        child: Text(_error!)
-      );
+      mainContent = Center(child: Text(_error!));
     }
     return Scaffold(
         appBar: AppBar(
